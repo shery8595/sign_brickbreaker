@@ -112,6 +112,31 @@
         #level:hover {
             transform: scale(1.05);
         }
+        #restartButton {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 20px 40px;
+            font-size: 32px;
+            font-weight: bold;
+            color: white;
+            background: linear-gradient(45deg, #FF4500, #FF8C00);
+            border: 3px solid #FFD700;
+            border-radius: 15px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            z-index: 1000;
+            font-family: 'Bubblegum Sans', cursive;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        #restartButton:hover {
+            transform: translate(-50%, -50%) scale(1.1);
+            background: linear-gradient(45deg, #FF6347, #FFA500);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
         @keyframes pulse {
             0% { transform: translateX(-50%) scale(1); }
             50% { transform: translateX(-50%) scale(1.05); }
@@ -135,6 +160,7 @@
     <div id="sign-title">SIGN</div>
     <div id="score">Score: 0</div>
     <div id="level">Level: 1</div>
+    <button id="restartButton">Restart Game</button>
     <div class="game-container">
         <canvas id="gameCanvas" width="800" height="600"></canvas>
     </div>
@@ -159,6 +185,8 @@
         const PADDLE_SPEED = 8;
         const POWERUP_DURATION = 5000; // 5 seconds
         const POWERUP_CHANCE = 0.2; // 20% chance to drop from brick
+        const BALL_SPEED = 5; // Base ball speed
+        const MAX_BALL_SPEED = 8; // Maximum ball speed
 
         // Particle system for effects
         let particles = [];
@@ -169,8 +197,8 @@
         let paddleX = (canvas.width - PADDLE_WIDTH) / 2;
         let ballX = canvas.width / 2;
         let ballY = canvas.height - 30;
-        let ballDX = 4;
-        let ballDY = -4;
+        let ballDX = BALL_SPEED;
+        let ballDY = -BALL_SPEED;
         let bricks = [];
         let currentHeadIndex = 0;
         let headImages = [];
@@ -180,6 +208,8 @@
             right: false
         };
         let brickSound = new Audio('brick_sound/break.mp3');
+        let gameOver = false;
+        let restartButton = document.getElementById('restartButton');
 
         // Powerup states
         let activePowerups = {
@@ -454,8 +484,8 @@
             initBricks();
             ballX = canvas.width / 2;
             ballY = canvas.height - 30;
-            ballDX = 4;
-            ballDY = -4;
+            ballDX = BALL_SPEED;
+            ballDY = -BALL_SPEED;
         }
 
         // Update powerups
@@ -534,6 +564,8 @@
 
         // Draw everything
         function draw() {
+            if (gameOver) return;
+            
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawBricks();
             updateParticles();
@@ -563,7 +595,8 @@
                     ballDY = -ballDY;
                 } else {
                     // Game over
-                    document.location.reload();
+                    gameOver = true;
+                    restartButton.style.display = 'block';
                 }
             }
 
@@ -572,8 +605,19 @@
                 const currentWidth = activePowerups.largePaddle ? PADDLE_WIDTH * 1.5 : PADDLE_WIDTH;
                 if (ballX + BALL_RADIUS > paddleX && ballX - BALL_RADIUS < paddleX + currentWidth) {
                     const hitPosition = (ballX - paddleX) / currentWidth;
-                    ballDX = (hitPosition - 0.5) * 8;
-                    ballDY = -Math.abs(ballDY);
+                    // Calculate new ball direction based on hit position
+                    const angle = (hitPosition - 0.5) * Math.PI / 3; // 60-degree spread
+                    const speed = Math.sqrt(ballDX * ballDX + ballDY * ballDY);
+                    ballDX = Math.sin(angle) * speed;
+                    ballDY = -Math.abs(Math.cos(angle) * speed);
+                    
+                    // Ensure ball speed stays within bounds
+                    const currentSpeed = Math.sqrt(ballDX * ballDX + ballDY * ballDY);
+                    if (currentSpeed > MAX_BALL_SPEED) {
+                        const ratio = MAX_BALL_SPEED / currentSpeed;
+                        ballDX *= ratio;
+                        ballDY *= ratio;
+                    }
                 }
             }
 
@@ -624,6 +668,22 @@
         document.addEventListener("touchmove", touchMoveHandler, false);
         document.addEventListener("keydown", keyDownHandler, false);
         document.addEventListener("keyup", keyUpHandler, false);
+        restartButton.addEventListener("click", function() {
+            // Reset game state
+            score = 0;
+            currentLevel = 1;
+            paddleX = (canvas.width - PADDLE_WIDTH) / 2;
+            ballX = canvas.width / 2;
+            ballY = canvas.height - 30;
+            ballDX = BALL_SPEED;
+            ballDY = -BALL_SPEED;
+            gameOver = false;
+            restartButton.style.display = 'none';
+            scoreElement.textContent = `Score: ${score}`;
+            levelElement.textContent = `Level: ${currentLevel}`;
+            initBricks();
+            draw();
+        });
 
         // Start the game
         loadHeadImages();
