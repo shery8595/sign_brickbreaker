@@ -137,6 +137,33 @@
             background: linear-gradient(45deg, #FF6347, #FFA500);
             box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
         }
+        #musicButton {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(45deg, #FF4500, #FF8C00);
+            border: 3px solid #FFD700;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 24px;
+        }
+        #musicButton:hover {
+            transform: scale(1.1);
+            background: linear-gradient(45deg, #FF6347, #FFA500);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+        #musicButton.muted {
+            opacity: 0.7;
+        }
         @keyframes pulse {
             0% { transform: translateX(-50%) scale(1); }
             50% { transform: translateX(-50%) scale(1.05); }
@@ -161,6 +188,7 @@
     <div id="score">Score: 0</div>
     <div id="level">Level: 1</div>
     <button id="restartButton">Restart Game</button>
+    <div id="musicButton">♪</div>
     <div class="game-container">
         <canvas id="gameCanvas" width="800" height="600"></canvas>
     </div>
@@ -208,8 +236,11 @@
             right: false
         };
         let brickSound = new Audio('brick_sound/break.mp3');
+        let bgMusic = new Audio('brick_sound/bg_sound.mp3');
         let gameOver = false;
         let restartButton = document.getElementById('restartButton');
+        let musicButton = document.getElementById('musicButton');
+        let isMusicPlaying = false;
 
         // Powerup states
         let activePowerups = {
@@ -668,6 +699,22 @@
         document.addEventListener("touchmove", touchMoveHandler, false);
         document.addEventListener("keydown", keyDownHandler, false);
         document.addEventListener("keyup", keyUpHandler, false);
+
+        // Music control
+        bgMusic.loop = true;
+        bgMusic.volume = 0.5;
+        
+        musicButton.addEventListener("click", function() {
+            if (isMusicPlaying) {
+                bgMusic.pause();
+                musicButton.classList.add('muted');
+            } else {
+                bgMusic.play();
+                musicButton.classList.remove('muted');
+            }
+            isMusicPlaying = !isMusicPlaying;
+        });
+
         restartButton.addEventListener("click", function() {
             // Reset game state
             score = 0;
